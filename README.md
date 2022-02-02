@@ -1,7 +1,7 @@
 # What is it?
 
 `#DevComrade` is a free and open-source Windows copy/paste/run productivity improvement tool for developers.
-Branched from https://github.com/postprintum/devcomrade
+Forked from https://github.com/postprintum/devcomrade
 Added some stuff - needs a cleanup before merge back
 
 # What's new
