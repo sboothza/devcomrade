@@ -17,6 +17,8 @@ Added some stuff - needs a cleanup before merge back
 - <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>Ins</kbd> to paste as unformatted multi-line text.
 - <kbd>Shift</kbd>+<kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>Ins</kbd> to paste only a number (e.g., a credit card or bank account number).
 - <kbd>Ctrl</kbd>+<kbd>Win</kbd>+<kbd>Ins</kbd> to wrap the clipboard text with `<pre>` tag, e.g. for pasting code into Microsoft Teams' chat as HTML ([sometimes nothing else really works](https://twitter.com/search?q=%40MicrosoftTeams%20paste%20formatting&f=live)).
+- <kbd>Ctrl</kbd>+<kbd>Win</kbd>+<kbd>W</kbd> to paste the path in the clipboard in Windows format
+- <kbd>Ctrl</kbd>+<kbd>Win</kbd>+<kbd>L</kbd> to paste the path in the clipboard in Linux format
 
 # Introduction
 
