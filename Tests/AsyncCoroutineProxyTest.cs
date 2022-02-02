@@ -5,27 +5,25 @@
 
 #nullable enable
 
-using AppLogic.Helpers;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using AppLogic.Helpers;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Tests
 {
     [TestClass]
     public class AsyncCoroutineProxyTest
     {
-        const string TRACE_CATEGORY = "coroutines";
+        private const string TRACE_CATEGORY = "coroutines";
 
         /// <summary>
-        /// CoroutineA yields to CoroutineB
+        ///     Co-routineA yields to Co-routineB
         /// </summary>
-        private async IAsyncEnumerable<string> CoroutineA(
-            ICoroutineProxy<string> coroutineProxy,
-            [EnumeratorCancellation] CancellationToken token)
+        private async IAsyncEnumerable<string> CoroutineA(ICoroutineProxy<string> coroutineProxy, [EnumeratorCancellation] CancellationToken token)
         {
             await using var coroutine = await coroutineProxy.AsAsyncEnumerator(token);
 
@@ -38,9 +36,8 @@ namespace Tests
 
             // receiving
             if (!await coroutine.MoveNextAsync())
-            {
                 yield break;
-            }
+
             Trace.WriteLine($"{name} received: {coroutine.Current}", TRACE_CATEGORY);
 
             // yielding 2
@@ -49,9 +46,8 @@ namespace Tests
 
             // receiving
             if (!await coroutine.MoveNextAsync())
-            {
                 yield break;
-            }
+
             Trace.WriteLine($"{name} received: {coroutine.Current}", TRACE_CATEGORY);
 
             // yielding 3
@@ -60,11 +56,9 @@ namespace Tests
         }
 
         /// <summary>
-        /// CoroutineB yields to CoroutineA
+        ///     CoroutineB yields to CoroutineA
         /// </summary>
-        private async IAsyncEnumerable<string> CoroutineB(
-            ICoroutineProxy<string> coroutineProxy,
-            [EnumeratorCancellation] CancellationToken token)
+        private async IAsyncEnumerable<string> CoroutineB(ICoroutineProxy<string> coroutineProxy, [EnumeratorCancellation] CancellationToken token)
         {
             await using var coroutine = await coroutineProxy.AsAsyncEnumerator(token);
 
@@ -73,9 +67,8 @@ namespace Tests
 
             // receiving
             if (!await coroutine.MoveNextAsync())
-            {
                 yield break;
-            }
+
             Trace.WriteLine($"{name} received: {coroutine.Current}", TRACE_CATEGORY);
 
             // yielding 1
@@ -84,9 +77,8 @@ namespace Tests
 
             // receiving
             if (!await coroutine.MoveNextAsync())
-            {
                 yield break;
-            }
+
             Trace.WriteLine($"{name} received: {coroutine.Current}", TRACE_CATEGORY);
 
             // yielding 2
@@ -95,19 +87,18 @@ namespace Tests
 
             // receiving
             if (!await coroutine.MoveNextAsync())
-            {
                 yield break;
-            }
+
             Trace.WriteLine($"{name} received: {coroutine.Current}", TRACE_CATEGORY);
         }
 
         /// <summary>
-        /// Testing CoroutineA and CoroutineB cooperative execution
+        ///     Testing Co-routineA and Co-routineB cooperative execution
         /// </summary>
-        [TestMethod] 
+        [TestMethod]
         public async Task test_two_coroutines_execution_flow()
         {
-            // Here we execute two cotoutines, CoroutineA and CoroutineB,
+            // Here we execute two co-routines, Co-routineA and Co-routineB,
             // which asynchronously yield to each other
 
             //TODO: test cancellation scenarios
@@ -119,39 +110,39 @@ namespace Tests
             // the TaskContinuationOptions.RunContinuationsAsynchronously option:
             // https://tinyurl.com/RunContinuationsAsynchronously
 
-            await using var apartment = new Tests.ThreadPoolApartment();
+            await using var apartment = new ThreadPoolApartment();
             await apartment.Run(async () =>
-            {
-                var proxyA = new AsyncCoroutineProxy<string>();
-                var proxyB = new AsyncCoroutineProxy<string>();
+                                {
+                                    var proxyA = new AsyncCoroutineProxy<string>();
+                                    var proxyB = new AsyncCoroutineProxy<string>();
 
-                var listener = new Tests.CategoryTraceListener(TRACE_CATEGORY);
-                Trace.Listeners.Add(listener);
-                try
-                {
-                    // start both coroutines
-                    await Task.WhenAll(
-                        proxyA.Run(token => CoroutineA(proxyB, token), token),
-                        proxyB.Run(token => CoroutineB(proxyA, token), token))
-                        .WithAggregatedExceptions();
-                }
-                finally
-                {
-                    Trace.Listeners.Remove(listener);
-                }
+                                    var listener = new CategoryTraceListener(TRACE_CATEGORY);
+                                    Trace.Listeners.Add(listener);
+                                    try
+                                    {
+                                        // start both co-routines
+                                        await Task.WhenAll(proxyA.Run(token => CoroutineA(proxyB, token), token),
+                                                           proxyB.Run(token => CoroutineB(proxyA, token), token))
+                                                  .WithAggregatedExceptions();
+                                    }
+                                    finally
+                                    {
+                                        Trace.Listeners.Remove(listener);
+                                    }
 
-                var traces = listener.ToArray();
-                Assert.AreEqual(traces[0], "A about to yeild: 1");
-                Assert.AreEqual(traces[1], "B received: 1 from A");
-                Assert.AreEqual(traces[2], "B about to yeild: 1");
-                Assert.AreEqual(traces[3], "A received: 1 from B");
-                Assert.AreEqual(traces[4], "A about to yeild: 2");
-                Assert.AreEqual(traces[5], "B received: 2 from A");
-                Assert.AreEqual(traces[6], "B about to yeild: 2");
-                Assert.AreEqual(traces[7], "A received: 2 from B");
-                Assert.AreEqual(traces[8], "A about to yeild: 3");
-                Assert.AreEqual(traces[9], "B received: 3 from A");
-            });
+                                    var traces = listener.ToArray();
+                                    Assert.AreEqual(traces[0], "A about to yeild: 1");
+                                    Assert.AreEqual(traces[1], "B received: 1 from A");
+                                    Assert.AreEqual(traces[2], "B about to yeild: 1");
+                                    Assert.AreEqual(traces[3], "A received: 1 from B");
+                                    Assert.AreEqual(traces[4], "A about to yeild: 2");
+                                    Assert.AreEqual(traces[5], "B received: 2 from A");
+                                    Assert.AreEqual(traces[6], "B about to yeild: 2");
+                                    Assert.AreEqual(traces[7], "A received: 2 from B");
+                                    Assert.AreEqual(traces[8], "A about to yeild: 3");
+                                    Assert.AreEqual(traces[9], "B received: 3 from A");
+                                },
+                                token);
         }
     }
 }

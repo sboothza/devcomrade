@@ -5,11 +5,12 @@
 
 #nullable enable
 
-using AppLogic.Helpers;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms;
+using AppLogic.Helpers;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Tests
 {
@@ -21,27 +22,27 @@ namespace Tests
         {
             await using var apartment = new WinFormsApartment();
             await apartment.Run(async () =>
-            {
-                await Task.Yield();
+                                {
+                                    await Task.Yield();
 
-                Assert.IsTrue(SynchronizationContext.Current is 
-                    System.Windows.Forms.WindowsFormsSynchronizationContext);
+                                    Assert.IsTrue(SynchronizationContext.Current is
+                                                      WindowsFormsSynchronizationContext);
 
-                async void AsyncVoidMethod1()
-                {
-                    await Task.Delay(200);
-                    throw new InvalidOperationException();
-                }
+                                    async void asyncVoidMethod1()
+                                    {
+                                        await Task.Delay(200);
+                                        throw new InvalidOperationException();
+                                    }
 
-                async void AsyncVoidMethod2()
-                {
-                    await Task.Delay(400);
-                    throw new NotSupportedException();
-                }
+                                    async void asyncVoidMethod2()
+                                    {
+                                        await Task.Delay(400);
+                                        throw new NotSupportedException();
+                                    }
 
-                AsyncVoidMethod1();
-                AsyncVoidMethod2();
-            });
+                                    asyncVoidMethod1();
+                                    asyncVoidMethod2();
+                                });
 
             // we can't track background operations with WindowsFormsSynchronizationContext
             Assert.IsTrue(apartment.AnyBackgroundOperation == null);
@@ -66,7 +67,7 @@ namespace Tests
 
                 var aggregate = ex as AggregateException;
                 Assert.IsNotNull(aggregate);
-                Assert.IsTrue(aggregate!.InnerExceptions.Count == 2);
+                Assert.IsTrue(aggregate.InnerExceptions.Count == 2);
                 Assert.IsTrue(aggregate.InnerExceptions[0] is InvalidOperationException);
                 Assert.IsTrue(aggregate.InnerExceptions[1] is NotSupportedException);
             }

@@ -5,9 +5,9 @@
 
 #nullable enable
 
-using AppLogic.Models;
 using System.Threading;
 using System.Threading.Tasks;
+using AppLogic.Models;
 
 namespace AppLogic.Presenter
 {
@@ -15,13 +15,13 @@ namespace AppLogic.Presenter
 
     public class HotkeyHandler
     {
-        public Hotkey Hotkey { get; }
-        public HotkeyHandlerCallback Callback { get; }
-
         public HotkeyHandler(Hotkey hotkey, HotkeyHandlerCallback callback)
         {
             Hotkey = hotkey;
             Callback = callback;
         }
+
+        public Hotkey Hotkey { get; }
+        public HotkeyHandlerCallback Callback { get; }
     }
 }

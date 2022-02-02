@@ -11,9 +11,9 @@ using System.Threading.Tasks;
 namespace AppLogic.Helpers
 {
     /// <summary>
-    /// Disposable
+    ///     Disposable
     /// </summary>
-    internal struct Disposable : IDisposable
+    internal readonly struct Disposable : IDisposable
     {
         private readonly Action _dispose;
 

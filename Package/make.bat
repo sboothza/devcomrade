@@ -1,4 +1,4 @@
-﻿@pushd %~dp0
+@pushd %~dp0
 
 dotnet publish -r win10-x64 -c Release --self-contained true -p:PublishTrimmed=false ..\DevComrade
 @if errorlevel 1 goto :error

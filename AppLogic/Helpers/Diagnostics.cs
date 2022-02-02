@@ -15,17 +15,16 @@ using System.Threading.Tasks;
 
 namespace AppLogic.Helpers
 {
-    internal static partial class Diagnostics
+    internal static class Diagnostics
     {
         /// <summary>
-        /// Double-click the output in Visual Studio Output Window to go to that source file and line
+        ///     Double-click the output in Visual Studio Output Window to go to that source file and line
         /// </summary>
         [Conditional("DEBUG")]
-        public static void Log(
-            string message,
-            [CallerMemberName] string callerName = "",
-            [CallerLineNumber] int lineNumber = 0,
-            [CallerFilePath] string filePath = "")
+        public static void Log(string message,
+                               [CallerMemberName] string callerName = "",
+                               [CallerLineNumber] int lineNumber = 0,
+                               [CallerFilePath] string filePath = "")
         {
             // trim trailing new line characters
             var trimmedMessage = message.TrimEnd(Environment.NewLine.ToCharArray());
@@ -33,10 +32,9 @@ namespace AppLogic.Helpers
         }
 
         [Conditional("DEBUG")]
-        public static void LogMethodName(
-            [CallerMemberName] string callerName = "",
-            [CallerLineNumber] int lineNumber = 0,
-            [CallerFilePath] string filePath = "")
+        public static void LogMethodName([CallerMemberName] string callerName = "",
+                                         [CallerLineNumber] int lineNumber = 0,
+                                         [CallerFilePath] string filePath = "")
         {
             // trim trailing new line characters
             Debug.WriteLine($"{filePath}({lineNumber}): {callerName}");
@@ -57,10 +55,11 @@ namespace AppLogic.Helpers
         public static void ShellExecute(string path)
         {
             var startInfo = new ProcessStartInfo
-            {
-                UseShellExecute = true,
-                FileName = path
-            };
+                            {
+                                UseShellExecute = true,
+                                FileName = path
+                            };
+
             using var process = Process.Start(startInfo);
         }
 
@@ -71,78 +70,74 @@ namespace AppLogic.Helpers
 
 #if DEBUG
         /// <summary>
-        /// Pause execution until both left and right control keys are pressed and depressed
+        ///     Pause execution until both left and right control keys are pressed and depressed
         /// </summary>
         public static async ValueTask PauseUntilLeftRightCtrlClickedAsync(CancellationToken token = default)
         {
             // wait for de-pressed state
-            await WaitForLeftRightControlStateAsync(pressed: false, token);
+            await WaitForLeftRightControlStateAsync(false, token);
             // wait for pressed state
-            await WaitForLeftRightControlStateAsync(pressed: true, token);
+            await WaitForLeftRightControlStateAsync(true, token);
             // wait for de-pressed state again
-            await WaitForLeftRightControlStateAsync(pressed: false, token);
+            await WaitForLeftRightControlStateAsync(false, token);
         }
 
-        private async static ValueTask<(bool left, bool right)> GetLeftRightCtrlStateAsync(uint delay, CancellationToken token)
+        private static async ValueTask<(bool left, bool right)> GetLeftRightCtrlStateAsync(uint delay, CancellationToken token)
         {
             // this is used purely for debugging and so we utilize 
             // native CreateTimerQueueTimer with WT_EXECUTEINPERSISTENTTHREAD 
             // for keyboard polling here, because we don't want 
             // to pollute ThreadPool threads with AttachThreadInput other user32 calls
             var tcs = new TaskCompletionSource<(bool, bool)>(TaskCreationOptions.RunContinuationsAsynchronously);
-            using var rego = token.Register(() => tcs.SetCanceled(), useSynchronizationContext: false);
+            using var rego = token.Register(() => tcs.SetCanceled(), false);
             WinApi.WaitOrTimerCallbackProc timerCallback = delegate
-            {
-                try
-                {
-                    // attach the to the foreground thread to read the keyboard status
-                    var currentThread = WinApi.GetCurrentThreadId();
-                    var foregroundWindow = WinApi.GetForegroundWindow();
-                    var foregroundThread = WinApi.GetWindowThreadProcessId(foregroundWindow, out uint foregroundProcess);
+                                                           {
+                                                               try
+                                                               {
+                                                                   // attach the to the foreground thread to read the keyboard status
+                                                                   var currentThread = WinApi.GetCurrentThreadId();
+                                                                   var foregroundWindow = WinApi.GetForegroundWindow();
+                                                                   var foregroundThread = WinApi.GetWindowThreadProcessId(foregroundWindow, out var foregroundProcess);
 
-                    var attached = WinApi.AttachThreadInput(foregroundThread, currentThread, true);
-                    try
-                    {
-                        var leftCtrl = (WinApi.GetAsyncKeyState(WinApi.VK_LCONTROL) & 0x8000) != 0;
-                        var rightCtrl = (WinApi.GetAsyncKeyState(WinApi.VK_RCONTROL) & 0x8000) != 0;
-                        tcs.TrySetResult((leftCtrl, rightCtrl));
-                    }
-                    finally
-                    {
-                        if (attached)
-                        {
-                            WinApi.AttachThreadInput(foregroundThread, currentThread, false);
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    tcs.TrySetException(ex);
-                }
-            };
+                                                                   var attached = WinApi.AttachThreadInput(foregroundThread, currentThread, true);
+                                                                   try
+                                                                   {
+                                                                       var leftCtrl = (WinApi.GetAsyncKeyState(WinApi.VK_LCONTROL)  & 0x8000) != 0;
+                                                                       var rightCtrl = (WinApi.GetAsyncKeyState(WinApi.VK_RCONTROL) & 0x8000) != 0;
+                                                                       tcs.TrySetResult((leftCtrl, rightCtrl));
+                                                                   }
+                                                                   finally
+                                                                   {
+                                                                       if (attached)
+                                                                           WinApi.AttachThreadInput(foregroundThread, currentThread, false);
+                                                                   }
+                                                               }
+                                                               catch (Exception ex)
+                                                               {
+                                                                   tcs.TrySetException(ex);
+                                                               }
+                                                           };
 
             var gcHandle = GCHandle.Alloc(timerCallback);
-            IntPtr timerHandle = IntPtr.Zero;
+            var timerHandle = IntPtr.Zero;
             try
             {
-                if (!WinApi.CreateTimerQueueTimer(
-                        out timerHandle,
-                        IntPtr.Zero,
-                        timerCallback,
-                        IntPtr.Zero, delay, 0,
-                        (UIntPtr)(WinApi.WT_EXECUTEINPERSISTENTTHREAD | WinApi.WT_EXECUTEONLYONCE)))
-                {
+                if (!WinApi.CreateTimerQueueTimer(out timerHandle,
+                                                  IntPtr.Zero,
+                                                  timerCallback,
+                                                  IntPtr.Zero,
+                                                  delay,
+                                                  0,
+                                                  (UIntPtr)(WinApi.WT_EXECUTEINPERSISTENTTHREAD | WinApi.WT_EXECUTEONLYONCE)))
                     throw WinUtils.CreateExceptionFromLastWin32Error();
-                }
 
                 return await tcs.Task;
             }
             finally
             {
                 if (timerHandle != IntPtr.Zero)
-                {
                     WinApi.DeleteTimerQueueTimer(IntPtr.Zero, timerHandle, IntPtr.Zero);
-                }
+
                 gcHandle.Free();
             }
         }
@@ -152,11 +147,9 @@ namespace AppLogic.Helpers
             const int interval = 100;
             while (true)
             {
-                (bool leftCtrl, bool rightCtrl) = await GetLeftRightCtrlStateAsync(interval, token);
+                var (leftCtrl, rightCtrl) = await GetLeftRightCtrlStateAsync(interval, token);
                 if (leftCtrl == pressed && rightCtrl == pressed)
-                {
                     break;
-                }
             }
         }
 #endif

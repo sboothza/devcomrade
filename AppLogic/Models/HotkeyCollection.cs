@@ -9,7 +9,5 @@ using System.Collections.Generic;
 
 namespace AppLogic.Models
 {
-    internal class HotkeyCollection : List<Hotkey>
-    {
-    }
+    internal class HotkeyCollection : List<Hotkey> {}
 }

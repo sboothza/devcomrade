@@ -5,13 +5,11 @@
 
 #nullable enable
 
-using System;
-
 namespace AppLogic.Models
 {
     public class Hotkey
     {
-        public string Name { get; set; } = String.Empty;
+        public string Name { get; set; } = string.Empty;
         public string? MenuItem { get; set; }
         public uint? Mods { get; set; }
         public uint? Vkey { get; set; }
@@ -23,11 +21,17 @@ namespace AppLogic.Models
 
         public override bool Equals(object? obj)
         {
-            return (obj is Hotkey other) && Name.Equals(other.Name);
+            return obj is Hotkey other && Name.Equals(other.Name);
         }
+
         public override int GetHashCode()
         {
             return Name.GetHashCode();
+        }
+
+        public override string ToString()
+        {
+            return Name;
         }
     }
 }

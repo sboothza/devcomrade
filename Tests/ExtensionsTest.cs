@@ -5,68 +5,27 @@
 
 #nullable enable
 
-using AppLogic.Helpers;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using AppLogic.Helpers;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Tests
 {
     /// <summary>
-    /// Test for AppLogic.Extensions
+    ///     Test for AppLogic.Extensions
     /// </summary>
     [TestClass]
     public class ExtensionsTest
     {
-        public ExtensionsTest()
-        {
-            //
-            // TODO: Add constructor logic here
-            //
-        }
-
-        private TestContext? testContextInstance;
-
         /// <summary>
-        ///Gets or sets the test context which provides
-        ///information about and functionality for the current test run.
-        ///</summary>
-        public TestContext? TestContext
-        {
-            get
-            {
-                return testContextInstance;
-            }
-            set
-            {
-                testContextInstance = value;
-            }
-        }
-
-        #region Additional test attributes
-        //
-        // You can use the following additional attributes as you write your tests:
-        //
-        // Use ClassInitialize to run code before running the first test in the class
-        // [ClassInitialize()]
-        // public static void MyClassInitialize(TestContext testContext) { }
-        //
-        // Use ClassCleanup to run code after all tests in a class have run
-        // [ClassCleanup()]
-        // public static void MyClassCleanup() { }
-        //
-        // Use TestInitialize to run code before running each test 
-        // [TestInitialize()]
-        // public void MyTestInitialize() { }
-        //
-        // Use TestCleanup to run code after each test has run
-        // [TestCleanup()]
-        // public void MyTestCleanup() { }
-        //
-        #endregion
+        ///     Gets or sets the test context which provides
+        ///     information about and functionality for the current test run.
+        /// </summary>
+        public TestContext? TestContext { get; set; }
 
         [TestMethod]
         public void Test_Exception_AsEnumerable_returns_an_enumerable_of_all_aggregated_exceptions()
@@ -74,9 +33,7 @@ namespace Tests
             static async Task trowAggregateExceptionAsync()
             {
                 await Task.Yield();
-                var ex1 = new AggregateException(
-                    new AggregateException("Empty aggregate"),
-                    new TaskCanceledException("Canceled 1"));
+                var ex1 = new AggregateException(new AggregateException("Empty aggregate"), new TaskCanceledException("Canceled 1"));
                 var ex2 = new AggregateException(ex1, new TaskCanceledException("Canceled 2"));
                 var ex3 = new AggregateException(ex2, new InvalidOperationException("Invalid"));
                 var ex4 = new AggregateException(ex3, new NotImplementedException("Not Implemented"));
@@ -87,13 +44,16 @@ namespace Tests
             {
                 // Task.Wait() wraps an exception with yet another AggregateException 
                 // and we want that
-                trowAggregateExceptionAsync().Wait();
+                trowAggregateExceptionAsync()
+                    .Wait();
             }
             catch (Exception ex)
             {
                 Assert.IsInstanceOfType(ex, typeof(AggregateException));
 
-                var all = ex.AsEnumerable().ToArray();
+                var all = ex.AsEnumerable()
+                            .ToArray();
+
                 Assert.IsTrue(all.Length == 5);
                 Assert.IsInstanceOfType(all[0], typeof(AggregateException));
                 Assert.IsInstanceOfType(all[1], typeof(TaskCanceledException));
@@ -111,9 +71,7 @@ namespace Tests
             static async Task throwAggregateExceptionAsync()
             {
                 await Task.Yield();
-                var ex1 = new AggregateException(
-                    new AggregateException("Empty aggregate"),
-                    new TaskCanceledException("Canceled 1!"));
+                var ex1 = new AggregateException(new AggregateException("Empty aggregate"),  new TaskCanceledException("Canceled 1!"));
                 var ex2 = new AggregateException(ex1, new TaskCanceledException("Canceled 2!"));
                 var ex3 = new AggregateException(ex2, new InvalidOperationException("Invalid!"));
                 var ex4 = new AggregateException(ex3, new NotImplementedException("Not Implemented!"));
@@ -124,7 +82,8 @@ namespace Tests
             {
                 // Task.Wait() wraps an exception with yet another AggregateException
                 // and we want that
-                throwAggregateExceptionAsync().Wait();
+                throwAggregateExceptionAsync()
+                    .Wait();
             }
             catch (Exception ex)
             {
@@ -139,11 +98,12 @@ namespace Tests
             {
                 await Task.Yield();
                 var ex1 = new AggregateException(new TaskCanceledException("Canceled 1!"));
-                var ex2 = new AggregateException(ex1, 
-                    new TaskCanceledException("Canceled 2!"));
-                var ex3 = new AggregateException(ex1, 
-                    new TaskCanceledException("Canceled 3!"),
-                    new TaskCanceledException("Canceled 4!"));
+                var ex2 = new AggregateException(ex1, new TaskCanceledException("Canceled 2!"));
+
+                var ex3 = new AggregateException(ex1,
+                                                 new TaskCanceledException("Canceled 3!"),
+                                                 new TaskCanceledException("Canceled 4!"));
+
                 throw ex3;
             }
 
@@ -151,7 +111,8 @@ namespace Tests
             {
                 // Task.Wait() wraps an exception with yet another AggregateException
                 // and we want that
-                throwAggregateOfTaskCanceledExceptionsAsync().Wait();
+                throwAggregateOfTaskCanceledExceptionsAsync()
+                    .Wait();
             }
             catch (Exception ex)
             {
@@ -185,45 +146,52 @@ namespace Tests
         public async Task Test_Task_Observe_does_observes_and_logs_exceptions()
         {
             await using var apartment = new ThreadPoolApartment();
-            int logged = 0;
+            var logged = 0;
 
             await apartment.Run(async () =>
-            {
-                await Task.Yield();
+                                {
+                                    await Task.Yield();
 
-                Action<Exception> logger = _ =>  logged++;
+                                    Action<Exception> logger = _ => logged++;
 
-                var token = new CancellationToken(canceled: true);
+                                    var token = new CancellationToken(true);
 
-                async Task work0()
-                {
-                    await Task.Delay(200);
-                    await Task.FromCanceled(token);
-                }
+                                    async Task work0()
+                                    {
+                                        await Task.Delay(200, token);
+                                        await Task.FromCanceled(token);
+                                    }
 
-                async Task work1()
-                {
-                    await Task.Delay(400);
-                    await Task.FromCanceled(token);
-                }
+                                    async Task work1()
+                                    {
+                                        await Task.Delay(400, token);
+                                        await Task.FromCanceled(token);
+                                    }
 
-                static async Task work2()
-                {
-                    await Task.Delay(600);
-                    await Task.FromException(new InvalidOperationException());
-                }
+                                    async Task work2()
+                                    {
+                                        await Task.Delay(600, token);
+                                        await Task.FromException(new InvalidOperationException());
+                                    }
 
-                static async Task work3()
-                {
-                    await Task.Delay(800);
-                    await Task.FromException(new NotImplementedException());
-                }
+                                    async Task work3()
+                                    {
+                                        await Task.Delay(800, token);
+                                        await Task.FromException(new NotImplementedException());
+                                    }
 
-                work0().Observe();
-                work1().Observe(logger);
-                work2().Observe(logger);
-                work3().Observe(_ => logged++);
-            });
+                                    work0()
+                                        .Observe();
+
+                                    work1()
+                                        .Observe(logger);
+
+                                    work2()
+                                        .Observe(logger);
+
+                                    work3()
+                                        .Observe(_ => logged++);
+                                });
 
             await Task.Delay(100);
             Assert.IsTrue(apartment.AnyBackgroundOperation == true);
@@ -245,7 +213,7 @@ namespace Tests
 
                 Assert.AreSame(ex, apartment.Completion.Exception?.InnerException);
 
-                Assert.IsTrue(logged == 3);
+                Assert.IsTrue(logged            == 3);
                 Assert.IsTrue(exceptions.Length == 4);
 
                 Assert.IsInstanceOfType(exceptions[0], typeof(TaskCanceledException));
@@ -259,50 +227,61 @@ namespace Tests
         public async Task Test_Task_Handle_does_handle_all_exceptions()
         {
             var exceptionList = new List<Exception>();
-            var @lock = new object();
-            bool handler(Exception ex) 
-            { 
-                lock (@lock!) 
-                    exceptionList!.Add(ex);
+            var _lock = new object();
+
+            bool handler(Exception ex)
+            {
+                lock (_lock!)
+                {
+                    exceptionList.Add(ex);
+                }
+
                 return true;
             }
 
             await using var apartment = new ThreadPoolApartment();
             await apartment.Run(async () =>
-            {
-                await Task.Yield();
+                                {
+                                    await Task.Yield();
 
-                var token = new CancellationToken(canceled: true);
+                                    var token = new CancellationToken(true);
 
-                async Task work0()
-                {
-                    await Task.Delay(200);
-                    await Task.FromCanceled(token);
-                }
+                                    async Task work0()
+                                    {
+                                        await Task.Delay(200, token);
+                                        await Task.FromCanceled(token);
+                                    }
 
-                async Task work1()
-                {
-                    await Task.Delay(400);
-                    await Task.FromCanceled(token);
-                }
+                                    async Task work1()
+                                    {
+                                        await Task.Delay(400, token);
+                                        await Task.FromCanceled(token);
+                                    }
 
-                static async Task work2()
-                {
-                    await Task.Delay(600);
-                    await Task.FromException(new InvalidOperationException());
-                }
+                                    async Task work2()
+                                    {
+                                        await Task.Delay(600, token);
+                                        await Task.FromException(new InvalidOperationException());
+                                    }
 
-                static async Task work3()
-                {
-                    await Task.Delay(800);
-                    await Task.FromException(new NotImplementedException());
-                }
+                                    async Task work3()
+                                    {
+                                        await Task.Delay(800, token);
+                                        await Task.FromException(new NotImplementedException());
+                                    }
 
-                work0().Handle(handler);
-                work1().Handle(handler);
-                work2().Handle(handler);
-                work3().Handle(handler);
-            });
+                                    work0()
+                                        .Handle(handler);
+
+                                    work1()
+                                        .Handle(handler);
+
+                                    work2()
+                                        .Handle(handler);
+
+                                    work3()
+                                        .Handle(handler);
+                                });
 
             await Task.Delay(100);
             Assert.IsTrue(apartment.AnyBackgroundOperation == true);
@@ -311,7 +290,8 @@ namespace Tests
             await apartment.Completion;
 
             Assert.IsTrue(apartment.AnyBackgroundOperation == false);
-            Assert.IsTrue(!apartment.GetExceptions().Any());
+            Assert.IsTrue(!apartment.GetExceptions()
+                                    .Any());
 
             Assert.IsInstanceOfType(exceptionList[0], typeof(TaskCanceledException));
             Assert.IsInstanceOfType(exceptionList[1], typeof(TaskCanceledException));
@@ -327,27 +307,58 @@ namespace Tests
                 await Task.Yield();
                 var ex1 = new AggregateException(new TaskCanceledException("Canceled 1!"));
                 var ex2 = new AggregateException(ex1,
-                    new TaskCanceledException("Canceled 2!"));
+                                                 new TaskCanceledException("Canceled 2!"));
+
                 var ex3 = new AggregateException(ex1,
-                    new TaskCanceledException("Canceled 3!"),
-                    new TaskCanceledException("Canceled 4!"));
+                                                 new TaskCanceledException("Canceled 3!"),
+                                                 new TaskCanceledException("Canceled 4!"));
+
                 throw ex3;
             }
 
             await using var apartment = new ThreadPoolApartment();
             var logged = false;
             await apartment.Run(async () =>
-            {
-                await Task.Yield();
-                Task.FromCanceled(new CancellationToken(canceled: true)).IgnoreCancellations();
-                throwAggregateOfTaskCanceledExceptionsAsync().IgnoreCancellations();
-                throwAggregateOfTaskCanceledExceptionsAsync().IgnoreCancellations(ex => logged = true);
-            });
+                                {
+                                    await Task.Yield();
+                                    Task.FromCanceled(new CancellationToken(true))
+                                        .IgnoreCancellations();
+
+                                    throwAggregateOfTaskCanceledExceptionsAsync()
+                                        .IgnoreCancellations();
+
+                                    throwAggregateOfTaskCanceledExceptionsAsync()
+                                        .IgnoreCancellations(ex => logged = true);
+                                });
 
             apartment.Complete();
             await apartment.Completion;
             Assert.IsTrue(apartment.AnyBackgroundOperation == false);
             Assert.IsTrue(logged);
         }
+
+        #region Additional test attributes
+
+        //
+        // You can use the following additional attributes as you write your tests:
+        //
+        // Use ClassInitialize to run code before running the first test in the class
+        // [ClassInitialize()]
+        // public static void MyClassInitialize(TestContext testContext) { }
+        //
+        // Use ClassCleanup to run code after all tests in a class have run
+        // [ClassCleanup()]
+        // public static void MyClassCleanup() { }
+        //
+        // Use TestInitialize to run code before running each test 
+        // [TestInitialize()]
+        // public void MyTestInitialize() { }
+        //
+        // Use TestCleanup to run code after each test has run
+        // [TestCleanup()]
+        // public void MyTestCleanup() { }
+        //
+
+        #endregion
     }
 }

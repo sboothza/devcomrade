@@ -12,62 +12,53 @@ using System.Threading;
 namespace AppLogic.Helpers
 {
     /// <summary>
-    /// Attach Win32 input queue to another thread 
+    ///     Attach Win32 input queue to another thread
     /// </summary>
-    internal class AttachedThreadInputScope: IDisposable
+    internal class AttachedThreadInputScope : IDisposable
     {
-        private static readonly ThreadLocal<IDisposable?> s_current = 
-            new ThreadLocal<IDisposable?>();
-
-        public bool IsCurrent => s_current.Value == this;  
-        public bool IsAttached => _attached;
-        public IntPtr ForegroundWindow => _foregroundWindow;
-
-        private bool _attached = false;
-        private readonly IntPtr _foregroundWindow = IntPtr.Zero;
-        private readonly uint _foregroundThreadId = 0;
-        private readonly uint _currentThreadId = 0;
+        private static readonly ThreadLocal<IDisposable?> _current = new();
+        private readonly uint _currentThreadId;
+        private readonly uint _foregroundThreadId;
 
         private AttachedThreadInputScope()
         {
-            s_current.Value?.Dispose();
-            s_current.Value = this;
+            _current.Value?.Dispose();
+            _current.Value = this;
 
-            _foregroundWindow = WinApi.GetForegroundWindow();
+            ForegroundWindow = WinApi.GetForegroundWindow();
             _currentThreadId = WinApi.GetCurrentThreadId();
-            _foregroundThreadId = WinApi.GetWindowThreadProcessId(_foregroundWindow, out var _);
+            _foregroundThreadId = WinApi.GetWindowThreadProcessId(ForegroundWindow, out var _);
 
             if (_currentThreadId != _foregroundThreadId)
-            {
                 // attach to the foreground thread
                 if (!WinApi.AttachThreadInput(_currentThreadId, _foregroundThreadId, true))
                 {
                     // unable to attach, see if the window is a Win10 Console Window
-                    var className = new StringBuilder(capacity: 256);
-                    WinApi.GetClassName(_foregroundWindow, className, className.Capacity - 1);
-                    if (String.CompareOrdinal("ConsoleWindowClass", className.ToString()) != 0)
-                    {
+                    var className = new StringBuilder(256);
+                    WinApi.GetClassName(ForegroundWindow, className, className.Capacity - 1);
+                    if (string.CompareOrdinal("ConsoleWindowClass", className.ToString()) != 0)
                         return;
-                    }
                     // consider attached to a console window
                 }
-            }
 
-            _attached = true;
+            IsAttached = true;
         }
+
+        public bool IsCurrent => _current.Value == this;
+        public bool IsAttached { get; private set; }
+
+        public IntPtr ForegroundWindow { get; } = IntPtr.Zero;
 
         void IDisposable.Dispose()
         {
-            if (s_current.Value == this)
+            if (_current.Value == this)
             {
-                s_current.Value = null;
-                if (_attached)
+                _current.Value = null;
+                if (IsAttached)
                 {
-                    _attached = false;
+                    IsAttached = false;
                     if (_currentThreadId != _foregroundThreadId)
-                    {
                         WinApi.AttachThreadInput(_currentThreadId, _foregroundThreadId, false);
-                    }
                 }
             }
         }

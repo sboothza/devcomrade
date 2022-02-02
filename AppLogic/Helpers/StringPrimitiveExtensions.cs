@@ -5,7 +5,6 @@
 
 #nullable enable
 
-using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
@@ -13,43 +12,57 @@ using System.Text.RegularExpressions;
 namespace AppLogic.Helpers
 {
     /// <summary>
-    /// Primitive String extension 
-    /// TODO: unit tests
+    ///     Primitive String extension
+    ///     TODO: unit tests
     /// </summary>
     internal static class StringPrimitiveExtensions
     {
         /// <summary>
-        /// Using IsNotNullNorEmpty, especially as an extension method, may be an unpopular opinion,
-        /// yet the typical <c>!String.IsNullOrEmpty(s)</c> has often been error-prone to me.
-        /// Now, this is a personal project and I am not bound by corporate coding standards :)
-        /// Using <c>#nullable enable</c> and <c>[NotNullWhen]</c> helps, as well.
+        ///     Using IsNotNullNorEmpty, especially as an extension method, may be an unpopular opinion,
+        ///     yet the typical <c>!String.IsNullOrEmpty(s)</c> has often been error-prone to me.
+        ///     Now, this is a personal project and I am not bound by corporate coding standards :)
+        ///     Using <c>#nullable enable</c> and <c>[NotNullWhen]</c> helps, as well.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsNotNullNorEmpty([NotNullWhen(true)] this string? @this) =>
-            !String.IsNullOrEmpty(@this);
+        public static bool IsNotNullNorEmpty([NotNullWhen(true)] this string? @this)
+        {
+            return !string.IsNullOrEmpty(@this);
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsNullOrEmpty([NotNullWhen(false)] this string? @this) =>
-            String.IsNullOrEmpty(@this);
+        public static bool IsNullOrEmpty([NotNullWhen(false)] this string? @this)
+        {
+            return string.IsNullOrEmpty(@this);
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsNotNullNorWhiteSpace([NotNullWhen(true)] this string? @this) =>
-            !String.IsNullOrWhiteSpace(@this);
+        public static bool IsNotNullNorWhiteSpace([NotNullWhen(true)] this string? @this)
+        {
+            return !string.IsNullOrWhiteSpace(@this);
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsNullOrWhiteSpace([NotNullWhen(false)] this string? @this) =>
-            String.IsNullOrWhiteSpace(@this);
+        public static bool IsNullOrWhiteSpace([NotNullWhen(false)] this string? @this)
+        {
+            return string.IsNullOrWhiteSpace(@this);
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsEmpty(this string @this) =>
-            @this.Length == 0;
+        public static bool IsEmpty(this string @this)
+        {
+            return @this.Length == 0;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsNotEmpty(this string @this) =>
-            (uint)@this.Length > 0u;
+        public static bool IsNotEmpty(this string @this)
+        {
+            return (uint)@this.Length > 0u;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static string Replace(this string @this, Regex regex, string replacement) =>
-            regex.Replace(@this, replacement);
+        public static string Replace(this string @this, Regex regex, string replacement)
+        {
+            return regex.Replace(@this, replacement);
+        }
     }
 }

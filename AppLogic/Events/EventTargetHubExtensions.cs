@@ -6,29 +6,34 @@
 #nullable enable
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AppLogic.Events
 {
     public static class EventTargetHubExtensions
     {
-        public static bool HasEventTarget<T>(this IEventTargetHub @this) 
-            where T : EventArgs =>
-            @this.GetEventTarget<T>() != null;
+        public static bool HasEventTarget<T>(this IEventTargetHub @this)
+            where T : EventArgs
+        {
+            return @this.GetEventTarget<T>() != null;
+        }
 
         public static void AddListener<T>(this IEventTargetHub @this, EventHandler<T> listener)
-            where T : EventArgs =>
+            where T : EventArgs
+        {
             @this.GetEventTarget<T>()!.Event += listener;
+        }
 
         public static void RemoveListener<T>(this IEventTargetHub @this, EventHandler<T> listener)
-            where T : EventArgs =>
+            where T : EventArgs
+        {
             @this.GetEventTarget<T>()!.Event -= listener;
+        }
 
-        public static void Dispatch<T>(this IEventTargetHub @this, object? source, T eventArgs) 
-            where T : EventArgs =>
-            @this.GetEventTarget<T>()?.Dispatch(source, eventArgs);
+        public static void Dispatch<T>(this IEventTargetHub @this, object? source, T eventArgs)
+            where T : EventArgs
+        {
+            @this.GetEventTarget<T>()
+                 ?.Dispatch(source, eventArgs);
+        }
     }
 }

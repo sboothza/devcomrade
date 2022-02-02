@@ -9,7 +9,5 @@ using System.Collections.Generic;
 
 namespace AppLogic.Models
 {
-    internal class OptionCollection : Dictionary<string, string>
-    {
-    }
+    internal class OptionCollection : Dictionary<string, string> {}
 }

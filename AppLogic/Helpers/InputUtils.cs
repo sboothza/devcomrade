@@ -6,6 +6,8 @@
 #nullable enable
 
 using System;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -19,23 +21,21 @@ namespace AppLogic.Helpers
         {
             // the high-order word of the return value indicates the types of messages currently in the queue,
             // including already observed but not retrieved messages;
-            // beware of the undoc QS_EVENT, it may always be returning non-zero
-            uint status = WinApi.GetQueueStatus(qsFlags);
-            return (status >> 16) != 0;
+            // beware of the undocumented QS_EVENT, it may always be returning non-zero
+            var status = WinApi.GetQueueStatus(qsFlags);
+            return status >> 16 != 0;
         }
 
         /// <summary>
-        /// Yield to the message loop via a low-priority WM_TIMER message
-        /// https://web.archive.org/web/20130627005845/http://support.microsoft.com/kb/96006 
-        /// All input messages are processed before WM_TIMER and WM_PAINT messages.
-        /// Unlike with System.Windows.Forms.Timer, we don't need a hidden window for this.
+        ///     Yield to the message loop via a low-priority WM_TIMER message
+        ///     https://web.archive.org/web/20130627005845/http://support.microsoft.com/kb/96006
+        ///     All input messages are processed before WM_TIMER and WM_PAINT messages.
+        ///     Unlike with System.Windows.Forms.Timer, we don't need a hidden window for this.
         /// </summary>
-        [System.Diagnostics.DebuggerNonUserCode]
-        public static async ValueTask TimerYield(
-            int delay = MIN_DELAY, 
-            CancellationToken token = default)
+        [DebuggerNonUserCode]
+        public static async ValueTask TimerYield(int delay = MIN_DELAY, CancellationToken token = default)
         {
-            // It is possible to reduce the ammount of allocations by 
+            // It is possible to reduce the amount of allocations by 
             // using a custom awaiter or a pooled/cached implementation of IValueTaskSource 
             // instead of TaskCompletionSource, as well as TimerProc, 
             // but that'd be an overkill for our use case
@@ -45,22 +45,23 @@ namespace AppLogic.Helpers
             var tcs = new TaskCompletionSource<DBNull>();
 
             WinApi.TimerProc timerProc = delegate
-            {
-                if (token.IsCancellationRequested)
-                    tcs.TrySetCanceled();
-                else
-                    tcs.TrySetResult(DBNull.Value);
-            };
+                                         {
+                                             if (token.IsCancellationRequested)
+                                                 tcs.TrySetCanceled();
+                                             else
+                                                 tcs.TrySetResult(DBNull.Value);
+                                         };
 
-            var gch = System.Runtime.InteropServices.GCHandle.Alloc(timerProc);
+            var gch = GCHandle.Alloc(timerProc);
             try
             {
                 var timerId = WinApi.SetTimer(IntPtr.Zero, IntPtr.Zero, (uint)delay, timerProc);
                 if (timerId == IntPtr.Zero)
                     throw new InvalidOperationException();
+
                 try
                 {
-                    using var rego = token.Register(() => tcs.TrySetCanceled(), useSynchronizationContext: false);
+                    await using var rego = token.Register(() => tcs.TrySetCanceled(), false);
                     await tcs.Task;
                 }
                 finally
@@ -75,12 +76,11 @@ namespace AppLogic.Helpers
         }
 
         /// <summary>
-        /// timer-based yielding to keep the UI responsive
+        ///     timer-based yielding to keep the UI responsive
         /// </summary>
-        public static async ValueTask InputYield(
-            uint qsFlags = WinApi.QS_INPUT | WinApi.QS_POSTMESSAGE, 
-            int delay = MIN_DELAY, 
-            CancellationToken token = default)
+        public static async ValueTask InputYield(uint qsFlags = WinApi.QS_INPUT | WinApi.QS_POSTMESSAGE,
+                                                 int delay = MIN_DELAY,
+                                                 CancellationToken token = default)
         {
             token.ThrowIfCancellationRequested();
 

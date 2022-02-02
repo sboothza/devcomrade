@@ -5,11 +5,11 @@
 
 #nullable enable
 
-using AppLogic.Helpers;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using AppLogic.Helpers;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Tests
 {
@@ -21,26 +21,26 @@ namespace Tests
         {
             await using var apartment = new SingleThreadApartment();
             await apartment.Run(async () =>
-            {
-                await Task.Yield();
+                                {
+                                    await Task.Yield();
 
-                Assert.IsTrue(SynchronizationContext.Current is SingleThreadApartment.SingleThreadSyncContext);
+                                    Assert.IsTrue(SynchronizationContext.Current is SingleThreadApartment.SingleThreadSyncContext);
 
-                async void AsyncVoidMethod0()
-                {
-                    await Task.Delay(400);
-                    throw new InvalidOperationException();
-                }
+                                    async void asyncVoidMethod0()
+                                    {
+                                        await Task.Delay(400);
+                                        throw new InvalidOperationException();
+                                    }
 
-                async void AsyncVoidMethod1()
-                {
-                    await Task.Delay(600);
-                    throw new NotSupportedException();
-                }
+                                    async void asyncVoidMethod1()
+                                    {
+                                        await Task.Delay(600);
+                                        throw new NotSupportedException();
+                                    }
 
-                AsyncVoidMethod0();
-                AsyncVoidMethod1();
-            });
+                                    asyncVoidMethod0();
+                                    asyncVoidMethod1();
+                                });
 
             apartment.Complete();
 

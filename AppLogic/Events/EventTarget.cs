@@ -6,21 +6,19 @@
 #nullable enable
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AppLogic.Events
 {
     /// <summary>
-    /// A simple event container for pub/sup scenarios, resembling JavaScript's EventTarget
+    ///     A simple event container for pub/sup scenarios, resembling JavaScript's EventTarget
     /// </summary>
     public class EventTarget<T> where T : EventArgs
     {
         public event EventHandler<T>? Event;
 
-        public void Dispatch(object? source, T eventArgs) => 
-            this.Event?.Invoke(source, eventArgs);
+        public void Dispatch(object? source, T eventArgs)
+        {
+            Event?.Invoke(source, eventArgs);
+        }
     }
 }

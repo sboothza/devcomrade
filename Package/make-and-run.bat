@@ -1,4 +1,4 @@
-﻿@pushd %~dp0
+@pushd %~dp0
 @call make.bat
 @if errorlevel 1 goto :error
 

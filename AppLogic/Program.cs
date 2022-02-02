@@ -5,8 +5,6 @@
 
 #nullable enable
 
-using AppLogic.Helpers;
-using AppLogic.Presenter;
 using System;
 using System.Diagnostics;
 using System.Reflection;
@@ -15,6 +13,8 @@ using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Threading;
 using System.Windows.Forms;
+using AppLogic.Helpers;
+using AppLogic.Presenter;
 
 [assembly: InternalsVisibleTo("Tests")]
 [assembly: InternalsVisibleTo("DevComrade")]
@@ -22,12 +22,16 @@ using System.Windows.Forms;
 
 namespace AppLogic
 {
-    internal static partial class Program
+    internal static class Program
     {
+        private static readonly Guid _mutexGuid = new(0xe7a2ee5a, 0xc826, 0x4152, 0x9d, 0x0, 0x20, 0xfb, 0x19, 0x99, 0xdd, 0x9a);
         // cancellation of the RunAsync event loop
-        private static CancellationTokenSource RuntimeCts { get; } = new CancellationTokenSource();
+        private static CancellationTokenSource RuntimeCts { get; } = new();
 
-        private static void Stop() => RuntimeCts.Cancel();
+        private static void Stop()
+        {
+            RuntimeCts.Cancel();
+        }
 
         private static async void RunAsync()
         {
@@ -40,15 +44,11 @@ namespace AppLogic
             catch (Exception ex)
             {
                 if (ex.IsOperationCanceled())
-                {
                     // absorb cancellations
                     Trace.WriteLine(ex.Message);
-                }
                 else
-                {
                     // handle here or re-throw and threadExceptionHandler will handle it
                     ObserveError(ex);
-                }
             }
             finally
             {
@@ -64,26 +64,22 @@ namespace AppLogic
             Environment.ExitCode = 1;
         }
 
-        private static void ThreadExceptionHandler(object s, System.Threading.ThreadExceptionEventArgs e)
+        private static void ThreadExceptionHandler(object s, ThreadExceptionEventArgs e)
         {
             ObserveError(e.Exception);
             // don't exit if it's a non-critical clipboard error
             if (!ClipboardAccess.IsClipboardError(e.Exception))
-            {
                 Stop();
-            }
         }
-
-        private static readonly Guid mutexGuid = new Guid(
-            0xe7a2ee5a, 0xc826, 0x4152, 0x9d, 0x0, 0x20, 0xfb, 0x19, 0x99, 0xdd, 0x9a);
 
         private static Mutex CreateAppMutex()
         {
-            var mutex = new Mutex(false, mutexGuid.ToString());
+            var mutex = new Mutex(false, _mutexGuid.ToString());
             var mutexSecurity = new MutexSecurity();
-            var allowEveryoneRule = new MutexAccessRule(
-                new SecurityIdentifier(WellKnownSidType.WorldSid, null),
-                MutexRights.FullControl, AccessControlType.Allow);
+            var allowEveryoneRule = new MutexAccessRule(new SecurityIdentifier(WellKnownSidType.WorldSid, null),
+                                                        MutexRights.FullControl,
+                                                        AccessControlType.Allow);
+
             mutexSecurity.AddAccessRule(allowEveryoneRule);
             mutex.SetAccessControl(mutexSecurity);
             return mutex;

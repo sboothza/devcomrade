@@ -11,13 +11,13 @@ namespace AppLogic.Presenter
 {
     public class ScriptGlobals : IScriptGlobals
     {
-        public IHotkeyHandlerHost Host { get; }
-        public CancellationToken Token { get; }
-
         public ScriptGlobals(IHotkeyHandlerHost host, CancellationToken token)
         {
-            this.Host = host;
-            this.Token = token;
+            Host = host;
+            Token = token;
         }
+
+        public IHotkeyHandlerHost Host { get; }
+        public CancellationToken Token { get; }
     }
 }

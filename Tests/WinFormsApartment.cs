@@ -5,26 +5,20 @@
 
 #nullable enable
 
-using AppLogic.Helpers;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using AppLogic.Helpers;
 
 namespace Tests
 {
     /// <summary>
-    /// Test WinFroms stuff on a dedicated thread with proper WindowsFormsSynchronizationContext
+    ///     Test WinForms stuff on a dedicated thread with proper WindowsFormsSynchronizationContext
     /// </summary>
     public class WinFormsApartment : AsyncApartmentBase
     {
         private readonly Thread _thread; // an STA thread for WinForms
-
-        public override Task Completion { get; }
-
-        protected override TaskScheduler TaskScheduler { get; }
-
-        public override bool? AnyBackgroundOperation => null;
 
         /// <summary>MessageLoopApartment constructor</summary>
         public WinFormsApartment()
@@ -70,35 +64,46 @@ namespace Tests
                 }
             }
 
-            Task waitForCompletionAsync() => 
-                GetCompletionTask().ContinueWith(
-                    anteTask => { _thread.Join(); return anteTask; },
-                    cancellationToken: CancellationToken.None,
-                    TaskContinuationOptions.ExecuteSynchronously,
-                    scheduler: TaskScheduler.Default).Unwrap();
+            Task waitForCompletionAsync()
+            {
+                return GetCompletionTask()
+                       .ContinueWith(anteTask =>
+                                     {
+                                         _thread.Join();
+                                         return anteTask;
+                                     },
+                                     CancellationToken.None,
+                                     TaskContinuationOptions.ExecuteSynchronously,
+                                     TaskScheduler.Default)
+                       .Unwrap();
+            }
 
             _thread = new Thread(threadStart);
             _thread.SetApartmentState(ApartmentState.STA);
             _thread.IsBackground = true;
             _thread.Start();
 
-            this.TaskScheduler = startTcs.Task.Result;
-            this.Completion = waitForCompletionAsync();
+            TaskScheduler = startTcs.Task.Result;
+            Completion = waitForCompletionAsync();
         }
+
+        public override Task Completion { get; }
+
+        protected override TaskScheduler TaskScheduler { get; }
+
+        public override bool? AnyBackgroundOperation => null;
 
         protected override void ConcludeCompletion()
         {
             if (_thread.IsAlive)
-            {
-                Task.Factory.StartNew(
-                    () => Application.ExitThread(),
-                    CancellationToken.None,
-                    TaskCreationOptions.None,
-                    this.TaskScheduler).Observe();
-            }
+                Task.Factory.StartNew(Application.ExitThread,
+                                      CancellationToken.None,
+                                      TaskCreationOptions.None,
+                                      TaskScheduler)
+                    .Observe();
         }
 
-        private void ThreadExceptionHandler(object s, System.Threading.ThreadExceptionEventArgs e)
+        private void ThreadExceptionHandler(object s, ThreadExceptionEventArgs e)
         {
             AddException(e.Exception);
         }

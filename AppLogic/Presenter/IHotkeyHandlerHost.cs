@@ -11,9 +11,8 @@ using System.Threading.Tasks;
 namespace AppLogic.Presenter
 {
     /// <summary>
-    /// Host interface for hotkey handlers
+    ///     Host interface for hotkey handlers
     /// </summary>
-    /// 
     public interface IHotkeyHandlerHost
     {
         int TabSize { get; }

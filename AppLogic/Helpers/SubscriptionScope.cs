@@ -11,29 +11,29 @@ using System.Runtime.CompilerServices;
 namespace AppLogic.Helpers
 {
     /// <summary>
-    /// Handle an event with a scope, e.g.:
+    ///     Handle an event with a scope, e.g.:
     /// </summary>
     /// <example>
-    /// <code>
-    /// using (new SubscriptionScope<FormClosedEventHandler>(
-    ///     (s, e) => cts.Cancel(),
-    ///     listener => form.FormClosed += listener,
-    ///     listener => form.FormClosed -= listener))
-    /// {
-    ///		...	
-    /// }
-    /// </code>
+    ///     <code>
+    ///  using (new SubscriptionScope<FormClosedEventHandler/>
+    ///             (
+    ///             (s, e) => cts.Cancel(),
+    ///             listener => form.FormClosed += listener,
+    ///             listener => form.FormClosed -= listener))
+    ///             {
+    ///             ...
+    ///             }
+    ///  </code>
     /// </example>
-    internal struct SubscriptionScope<TListener>: IDisposable
+    internal readonly struct SubscriptionScope<TListener> : IDisposable
         where TListener : Delegate
     {
-        readonly TListener _listener;
-        readonly Action<TListener> _unsubscribe;
+        private readonly TListener _listener;
+        private readonly Action<TListener> _unsubscribe;
 
-        private SubscriptionScope(
-            TListener listener,
-            Action<TListener> subscribe,
-            Action<TListener> unsubscribe)
+        private SubscriptionScope(TListener listener,
+                                  Action<TListener> subscribe,
+                                  Action<TListener> unsubscribe)
         {
             _listener = listener;
             _unsubscribe = unsubscribe;
@@ -46,10 +46,9 @@ namespace AppLogic.Helpers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static IDisposable Create(
-                TListener listener,
-                Action<TListener> subscribe,
-                Action<TListener> unsubscribe)
+        public static IDisposable Create(TListener listener,
+                                         Action<TListener> subscribe,
+                                         Action<TListener> unsubscribe)
         {
             return new SubscriptionScope<TListener>(listener, subscribe, unsubscribe);
         }

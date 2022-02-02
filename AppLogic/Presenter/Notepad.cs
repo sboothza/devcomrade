@@ -5,8 +5,6 @@
 
 #nullable enable
 
-using AppLogic.Helpers;
-using Microsoft.Win32;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -16,54 +14,27 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using AppLogic.Helpers;
+using Microsoft.Win32;
 
 namespace AppLogic.Presenter
 {
     /// <summary>
-    /// A plain text editor with multi-level Undo/Redo
-    /// For now, we the legacy WebBrowser for that and will replace it 
-    /// with WebView2 when it is available
+    ///     A plain text editor with multi-level Undo/Redo
+    ///     For now, we the legacy WebBrowser for that and will replace it
+    ///     with WebView2 when it is available
     /// </summary>
-    [System.ComponentModel.DesignerCategory("")]
+    [DesignerCategory("")]
     internal class Notepad : Form
     {
-        private WebBrowser Browser { get; }
-
         private readonly Task _initTask;
-
-        public event EventHandler? ControlEnterPressed;
-
-        internal void OnControlEnterPressed()
-        {
-            this.ControlEnterPressed?.Invoke(this, new EventArgs());
-        }
-
-        private Lazy<IBrowser> BrowserInstance => new Lazy<IBrowser>(() =>
-            this.Browser.ActiveXInstance as IBrowser ??
-                throw new InvalidComObjectException(nameof(BrowserInstance)),
-            isThreadSafe: false);
-
-        private Lazy<IDocument> Document => new Lazy<IDocument>(() =>
-            this.BrowserInstance.Value.Document ??
-               throw new InvalidComObjectException(nameof(Document)),
-            isThreadSafe: false);
-
-        private Lazy<ITextArea> EditorElement => new Lazy<ITextArea>(() =>
-            (this.Document.Value.getElementById("editor") as ITextArea) ??
-                throw new InvalidComObjectException(nameof(EditorElement)),
-            isThreadSafe: false);
-
-        public bool IsReady =>
-            _initTask.IsCompleted &&
-            this.Browser.ReadyState == WebBrowserReadyState.Complete;
 
         static Notepad()
         {
             // enable HTML5, more info: https://stackoverflow.com/a/18333982/1768303
             if (LicenseManager.UsageMode != LicenseUsageMode.Runtime)
-            {
                 return;
-            }
+
             SetWebBrowserFeature("FEATURE_BROWSER_EMULATION", 11000);
             SetWebBrowserFeature("FEATURE_SPELLCHECKING", 1);
             SetWebBrowserFeature("FEATURE_DOMSTORAGE", 1);
@@ -76,76 +47,103 @@ namespace AppLogic.Presenter
             SetWebBrowserFeature("FEATURE_LOCALMACHINE_LOCKDOWN", 1);
         }
 
-        private static void SetWebBrowserFeature(string feature, uint value)
-        {
-            using var process = Process.GetCurrentProcess();
-            using var key = Registry.CurrentUser.CreateSubKey(
-                String.Concat(@"Software\Microsoft\Internet Explorer\Main\FeatureControl\", feature),
-                RegistryKeyPermissionCheck.ReadWriteSubTree);
-            var appName = Path.GetFileName(process!.MainModule!.FileName);
-            key.SetValue(appName, (UInt32)value, RegistryValueKind.DWord);
-        }
-
         public Notepad(CancellationToken token)
         {
-            this.Browser = new CustomWebBrowser(this)
-            {
-                Dock = DockStyle.Fill,
-                AllowWebBrowserDrop = false,
-                ScriptErrorsSuppressed = true,
-                ScrollBarsEnabled = false,
-                AllowNavigation = false,
-                IsWebBrowserContextMenuEnabled = true,
-                WebBrowserShortcutsEnabled = true
-            };
+            Browser = new CustomWebBrowser(this)
+                      {
+                          Dock = DockStyle.Fill,
+                          AllowWebBrowserDrop = false,
+                          ScriptErrorsSuppressed = true,
+                          ScrollBarsEnabled = false,
+                          AllowNavigation = false,
+                          IsWebBrowserContextMenuEnabled = true,
+                          WebBrowserShortcutsEnabled = true
+                      };
 
-            this.Text = $"{Application.ProductName} Notepad";
-            this.ShowInTaskbar = false;
-            this.Padding = new Padding(3);
-            this.Icon = Icon.ExtractAssociatedIcon(Diagnostics.GetExecutablePath());
+            Text = $"{Application.ProductName} Notepad";
+            ShowInTaskbar = false;
+            Padding = new Padding(3);
+            Icon = Icon.ExtractAssociatedIcon(Diagnostics.GetExecutablePath());
 
             var workingArea = Screen.PrimaryScreen.WorkingArea;
-            this.StartPosition = FormStartPosition.Manual;
-            this.Width = workingArea.Width / 2;
-            this.Height = workingArea.Height / 2;
-            this.Left = workingArea.Left + (workingArea.Width - this.Width) / 2;
-            this.Top = workingArea.Top + (workingArea.Height - this.Height) / 2;
+            StartPosition = FormStartPosition.Manual;
+            Width = workingArea.Width   / 2;
+            Height = workingArea.Height / 2;
+            Left = workingArea.Left + (workingArea.Width  - Width)  / 2;
+            Top = workingArea.Top   + (workingArea.Height - Height) / 2;
 
-            this.KeyPreview = true;
+            KeyPreview = true;
 
-            this.Controls.Add(this.Browser);
+            Controls.Add(Browser);
 
             async void handleFocus(object? s, EventArgs e)
             {
                 await Task.Yield();
-                if (!this.IsDisposed && this.Handle == WinApi.GetActiveWindow())
-                {
-                    this.FocusEditor();
-                }
+                if (!IsDisposed && Handle == WinApi.GetActiveWindow())
+                    FocusEditor();
             }
 
-            this.Activated += handleFocus;
-            this.GotFocus += handleFocus;
+            Activated += handleFocus;
+            GotFocus += handleFocus;
 
-            this.FormClosing += (s, e) =>
-            {
-                if (e.CloseReason == CloseReason.UserClosing)
-                {
-                    e.Cancel = true;
-                    this.Hide();
-                }
-            };
+            FormClosing += (s, e) =>
+                           {
+                               if (e.CloseReason == CloseReason.UserClosing)
+                               {
+                                   e.Cancel = true;
+                                   Hide();
+                               }
+                           };
 
             _initTask = LoadAsync(token);
+        }
+
+        private WebBrowser Browser { get; }
+
+        private Lazy<IBrowser> BrowserInstance => new(() =>
+                                                          Browser.ActiveXInstance as IBrowser ??
+                                                          throw new InvalidComObjectException(nameof(BrowserInstance)),
+                                                      false);
+
+        private Lazy<IDocument> Document => new(() =>
+                                                    BrowserInstance.Value.Document ??
+                                                    throw new InvalidComObjectException(nameof(Document)),
+                                                false);
+
+        private Lazy<ITextArea> EditorElement => new(() =>
+                                                         Document.Value.getElementById("editor") as ITextArea ??
+                                                         throw new InvalidComObjectException(nameof(EditorElement)),
+                                                     false);
+
+        public bool IsReady => _initTask.IsCompleted && Browser.ReadyState == WebBrowserReadyState.Complete;
+
+        public string? EditorText => IsReady ? EditorElement.Value.value : null;
+
+        public event EventHandler? ControlEnterPressed;
+
+        internal void OnControlEnterPressed()
+        {
+            ControlEnterPressed?.Invoke(this, EventArgs.Empty);
+        }
+
+        private static void SetWebBrowserFeature(string feature, uint value)
+        {
+            using var process = Process.GetCurrentProcess();
+            using var key = Registry.CurrentUser.CreateSubKey(string.Concat(@"Software\Microsoft\Internet Explorer\Main\FeatureControl\", feature),
+                                                              RegistryKeyPermissionCheck.ReadWriteSubTree);
+
+            var appName = Path.GetFileName(process!.MainModule!.FileName);
+            key.SetValue(appName, value, RegistryValueKind.DWord);
         }
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
             if (keyData == Keys.Escape)
             {
-                this.Hide();
+                Hide();
                 return true;
             }
+
             return base.ProcessCmdKey(ref msg, keyData);
         }
 
@@ -153,58 +151,57 @@ namespace AppLogic.Presenter
         {
             var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            using var scope = SubscriptionScope<WebBrowserDocumentCompletedEventHandler>.Create(
-                (s, e) => tcs.TrySetResult(DBNull.Value),
-                handler => this.Browser.DocumentCompleted += handler,
-                handler => this.Browser.DocumentCompleted -= handler);
+            using var scope = SubscriptionScope<WebBrowserDocumentCompletedEventHandler>.Create((s, e) => tcs.TrySetResult(DBNull.Value),
+                                                                                                handler => Browser.DocumentCompleted += handler,
+                                                                                                handler => Browser.DocumentCompleted -= handler);
 
             using var rego = token.Register(() => tcs.TrySetCanceled());
-            this.Browser.DocumentText = HTML_SOURCE;
+            Browser.DocumentText = HTML_SOURCE;
 
             await tcs.Task;
         }
 
         public void FocusEditor()
         {
-            if (this.IsReady)
+            if (IsReady)
             {
-                this.Browser.Focus();
-                this.EditorElement.Value.focus();
+                Browser.Focus();
+                EditorElement.Value.focus();
             }
         }
 
-        public Task WaitForReadyAsync(CancellationToken token) =>
-            _initTask.WithCancellation(token);
+        public Task WaitForReadyAsync(CancellationToken token)
+        {
+            return _initTask.WithCancellation(token);
+        }
 
-        private bool ExecCommand(string command, bool showUI, object value) =>
-            this.IsReady ? this.Document.Value.execCommand(command, showUI, value) : false;
+        private bool ExecCommand(string command, bool showUI, object value)
+        {
+            return IsReady && Document.Value.execCommand(command, showUI, value);
+        }
 
         public bool SelectAll()
         {
-            if (!this.IsReady)
-            {
+            if (!IsReady)
                 return false;
-            }
-            this.EditorElement.Value.createTextRange().select();
+
+            EditorElement.Value.createTextRange()
+                         .select();
+
             return true;
         }
 
-        public string? EditorText =>
-            this.IsReady ? this.EditorElement.Value.value : null;
-
         public bool Paste(string? text)
         {
-            if (!this.IsReady)
-            {
+            if (!IsReady)
                 return false;
-            }
 
-            var range = this.EditorElement.Value.createTextRange();
+            var range = EditorElement.Value.createTextRange();
             if (range.text != text)
             {
-                range.text = text ?? String.Empty;
+                range.text = text ?? string.Empty;
 
-                range = this.EditorElement.Value.createTextRange();
+                range = EditorElement.Value.createTextRange();
                 range.select();
 
                 return true;
@@ -247,15 +244,12 @@ namespace AppLogic.Presenter
                 if (e.Modifiers == Keys.Control && e.KeyCode == Keys.Enter)
                 {
                     e.IsInputKey = true;
-                    this._parent.OnControlEnterPressed();
+                    _parent.OnControlEnterPressed();
                     return;
                 }
 
                 // ignore these keys
-                if (e.Control &&
-                    (e.KeyCode == Keys.N || e.KeyCode == Keys.L ||
-                    e.KeyCode == Keys.O || e.KeyCode == Keys.P)
-                    || e.KeyCode == Keys.F5)
+                if (e.Control && e.KeyCode is Keys.N or Keys.L or Keys.O or Keys.P || e.KeyCode == Keys.F5)
                 {
                     e.IsInputKey = true;
                     return;
@@ -268,7 +262,9 @@ namespace AppLogic.Presenter
 #pragma warning disable CS0618 // InterfaceIsIDispatch is obsolete
         private const string IID_IDispatch = "00020400-0000-0000-C000-000000000046";
 
-        [ComVisible(true), Guid(IID_IDispatch), InterfaceType(ComInterfaceType.InterfaceIsIDispatch)]
+        [ComVisible(true)]
+        [Guid(IID_IDispatch)]
+        [InterfaceType(ComInterfaceType.InterfaceIsIDispatch)]
         private interface IDocument
         {
             IElement getElementById(string id);
@@ -276,13 +272,17 @@ namespace AppLogic.Presenter
             ISelection selection { get; }
         }
 
-        [ComVisible(true), Guid(IID_IDispatch), InterfaceType(ComInterfaceType.InterfaceIsIDispatch)]
+        [ComVisible(true)]
+        [Guid(IID_IDispatch)]
+        [InterfaceType(ComInterfaceType.InterfaceIsIDispatch)]
         private interface IElement
         {
             void focus();
         }
 
-        [ComVisible(true), Guid(IID_IDispatch), InterfaceType(ComInterfaceType.InterfaceIsIDispatch)]
+        [ComVisible(true)]
+        [Guid(IID_IDispatch)]
+        [InterfaceType(ComInterfaceType.InterfaceIsIDispatch)]
         private interface ITextArea
         {
             void focus();
@@ -290,20 +290,26 @@ namespace AppLogic.Presenter
             IRange createTextRange();
         }
 
-        [ComVisible(true), Guid(IID_IDispatch), InterfaceType(ComInterfaceType.InterfaceIsIDispatch)]
+        [ComVisible(true)]
+        [Guid(IID_IDispatch)]
+        [InterfaceType(ComInterfaceType.InterfaceIsIDispatch)]
         private interface IBrowser
         {
             IDocument Document { get; }
             int ReadyState { get; }
         }
 
-        [ComVisible(true), Guid(IID_IDispatch), InterfaceType(ComInterfaceType.InterfaceIsIDispatch)]
+        [ComVisible(true)]
+        [Guid(IID_IDispatch)]
+        [InterfaceType(ComInterfaceType.InterfaceIsIDispatch)]
         private interface ISelection
         {
             IRange createRange();
         }
 
-        [ComVisible(true), Guid(IID_IDispatch), InterfaceType(ComInterfaceType.InterfaceIsIDispatch)]
+        [ComVisible(true)]
+        [Guid(IID_IDispatch)]
+        [InterfaceType(ComInterfaceType.InterfaceIsIDispatch)]
         private interface IRange
         {
             string text { get; set; }
@@ -312,6 +318,7 @@ namespace AppLogic.Presenter
         }
 
 #pragma warning restore CS0618 // Type or member is obsolete
+
         #endregion
     }
 }

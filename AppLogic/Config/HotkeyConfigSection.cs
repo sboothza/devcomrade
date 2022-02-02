@@ -5,12 +5,12 @@
 
 #nullable enable
 
-using AppLogic.Helpers;
-using AppLogic.Models;
 using System;
 using System.Configuration;
 using System.Linq;
 using System.Xml;
+using AppLogic.Helpers;
+using AppLogic.Models;
 
 namespace AppLogic.Config
 {
@@ -21,54 +21,60 @@ namespace AppLogic.Config
             var result = new HotkeyCollection();
 
             foreach (var node in section.ChildNodes
-                .Cast<XmlNode>()
-                .Where(child => child.Name == "hotkey"))
+                                        .Cast<XmlNode>()
+                                        .Where(child => child.Name == "hotkey"))
             {
-                void throwFormatException() => throw new FormatException(node.OuterXml);
-
-                var name = node!.Attributes!["name"]?.Value;
-                if (name.IsNullOrWhiteSpace())
+                void throwFormatException()
                 {
-                    throwFormatException();
+                    throw new FormatException(node.OuterXml);
                 }
 
-                var menuItem = node.Attributes["menuItem"]?.Value;
+                var name = node!.Attributes!["name"]
+                                ?.Value;
+
+                if (name.IsNullOrWhiteSpace())
+                    throwFormatException();
+
+                var menuItem = node.Attributes["menuItem"]
+                                   ?.Value;
 
                 uint? mods = null;
-                var modsText = node.Attributes["mods"]?.Value;
+                var modsText = node.Attributes["mods"]
+                                   ?.Value;
+
                 if (modsText != null)
                 {
                     if (!ParsingHelpers.TryParseHexOrDec(modsText, out var modsValue))
-                    {
                         throwFormatException();
-                    }
+
                     mods = (uint)modsValue;
                 }
 
                 uint? vkey = null;
-                var vkeyText = node.Attributes["vkey"]?.Value;
+                var vkeyText = node.Attributes["vkey"]
+                                   ?.Value;
+
                 if (vkeyText != null)
                 {
                     if (!ParsingHelpers.TryParseHexOrDecOrChar(vkeyText, out var vkeyValue))
-                    {
                         throwFormatException();
-                    }
+
                     vkey = (uint)vkeyValue;
                 }
 
                 var isScript = false;
-                var isScriptText = node.Attributes["isScript"]?.Value;
+                var isScriptText = node.Attributes["isScript"]
+                                       ?.Value;
+
                 if (isScriptText != null && !ParsingHelpers.TryParseBool(isScriptText, out isScript))
-                {
                     throwFormatException();
-                }
 
                 var addSeparator = false;
-                var addSeparatorText = node.Attributes["hasSeparator"]?.Value;
+                var addSeparatorText = node.Attributes["hasSeparator"]
+                                           ?.Value;
+
                 if (addSeparatorText != null && !ParsingHelpers.TryParseBool(addSeparatorText, out addSeparator))
-                {
                     throwFormatException();
-                }
 
                 result.Add(new Hotkey
                 {

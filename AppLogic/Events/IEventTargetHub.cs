@@ -6,17 +6,15 @@
 #nullable enable
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AppLogic.Events
 {
     public interface IEventTargetHub
     {
-        public EventTarget<T>? GetEventTarget<T>() 
-            where T : EventArgs => 
-            (this as IEventTargetProp<T>)?.Value;
+        public EventTarget<T>? GetEventTarget<T>()
+            where T : EventArgs
+        {
+            return (this as IEventTargetProp<T>)?.Value;
+        }
     }
 }

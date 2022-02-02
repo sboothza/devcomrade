@@ -5,8 +5,8 @@
 
 #nullable enable
 
-using AppLogic.Models;
 using System.Diagnostics.CodeAnalysis;
+using AppLogic.Models;
 
 namespace AppLogic.Presenter
 {

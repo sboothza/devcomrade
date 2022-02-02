@@ -7,10 +7,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Threading.Channels;
+using System.Threading.Tasks;
 
 namespace Tests
 {
@@ -21,55 +20,46 @@ namespace Tests
 
     public static class CoroutineProxyExt
     {
-        public async static Task<IAsyncEnumerator<T>> AsAsyncEnumerator<T>(
-            this ICoroutineProxy<T> @this,
-            CancellationToken token = default)
+        public static async Task<IAsyncEnumerator<T>> AsAsyncEnumerator<T>(this ICoroutineProxy<T> @this, CancellationToken token = default)
         {
             return (await @this.AsAsyncEnumerable(token)).GetAsyncEnumerator(token);
         }
 
-        public async static ValueTask<T> GetNextAsync<T>(this IAsyncEnumerator<T> @this)
+        public static async ValueTask<T> GetNextAsync<T>(this IAsyncEnumerator<T> @this)
         {
             if (!await @this.MoveNextAsync())
-            {
                 throw new IndexOutOfRangeException(nameof(GetNextAsync));
-            }
+
             return @this.Current;
         }
 
         public static Task<T> GetNextAsync<T>(this IAsyncEnumerator<T> @this, CancellationToken token)
         {
-            return @this.GetNextAsync().AsTask().ContinueWith<Task<T>>(
-                continuationFunction: ante => ante,
-                cancellationToken: token,
-                continuationOptions: TaskContinuationOptions.ExecuteSynchronously,
-                TaskScheduler.Default).Unwrap();
+            return @this.GetNextAsync()
+                        .AsTask()
+                        .ContinueWith(ante => ante,
+                                      token,
+                                      TaskContinuationOptions.ExecuteSynchronously,
+                                      TaskScheduler.Default)
+                        .Unwrap();
         }
 
-        public static Task Run<T>(
-            this AsyncCoroutineProxy<T> @this,
-            IAsyncApartment apartment,
-            Func<CancellationToken, IAsyncEnumerable<T>> routine, 
-            CancellationToken token)
+        public static Task Run<T>(this AsyncCoroutineProxy<T> @this,
+                                  IAsyncApartment apartment,
+                                  Func<CancellationToken, IAsyncEnumerable<T>> routine,
+                                  CancellationToken token)
         {
-            return apartment.Run(
-                () => @this.Run(routine, token), 
-                token);
+            return apartment.Run(() => @this.Run(routine, token), token);
         }
     }
 
     public class AsyncCoroutineProxy<T> : ICoroutineProxy<T>
     {
-        readonly TaskCompletionSource<IAsyncEnumerable<T>> _proxyTcs =
-            new TaskCompletionSource<IAsyncEnumerable<T>>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-        public AsyncCoroutineProxy()
-        {
-        }
+        private readonly TaskCompletionSource<IAsyncEnumerable<T>> _proxyTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         async Task<IAsyncEnumerable<T>> ICoroutineProxy<T>.AsAsyncEnumerable(CancellationToken token)
         {
-            using var _ = token.Register(() => _proxyTcs.TrySetCanceled(), useSynchronizationContext: false);
+            await using var _ = token.Register(() => _proxyTcs.TrySetCanceled(), false);
             return await _proxyTcs.Task;
         }
 
@@ -80,13 +70,13 @@ namespace Tests
             var writer = channel.Writer;
             var proxy = channel.Reader.ReadAllAsync(token);
             _proxyTcs.SetResult(proxy); // throw if already set
-            
+
             try
             {
-                await foreach (var item in routine(token).WithCancellation(token))
-                {
+                await foreach (var item in routine(token)
+                    .WithCancellation(token))
                     await writer.WriteAsync(item, token);
-                }
+
                 writer.Complete();
             }
             catch (Exception ex)

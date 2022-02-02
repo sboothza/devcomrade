@@ -5,12 +5,12 @@
 
 #nullable enable
 
-using AppLogic.Helpers;
-using AppLogic.Models;
 using System;
 using System.Configuration;
 using System.Linq;
 using System.Xml;
+using AppLogic.Helpers;
+using AppLogic.Models;
 
 namespace AppLogic.Config
 {
@@ -21,18 +21,24 @@ namespace AppLogic.Config
             var result = new OptionCollection();
 
             foreach (var node in section.ChildNodes
-                .Cast<XmlNode>()
-                .Where(child => child.Name == "option"))
+                                        .Cast<XmlNode>()
+                                        .Where(child => child.Name == "option"))
             {
-                void throwFormatException() => throw new FormatException(node.OuterXml);
-
-                var name = node!.Attributes!["name"]?.Value;
-                if (name.IsNullOrWhiteSpace())
+                void throwFormatException()
                 {
-                    throwFormatException();
+                    throw new FormatException(node.OuterXml);
                 }
 
-                var value = node.Attributes["value"]?.Value ?? String.Empty;
+                var name = node!.Attributes!["name"]
+                                ?.Value;
+
+                if (name.IsNullOrWhiteSpace())
+                    throwFormatException();
+
+                var value = node.Attributes["value"]
+                                ?.Value ??
+                            string.Empty;
+
                 result.Add(name!, value);
             }
 

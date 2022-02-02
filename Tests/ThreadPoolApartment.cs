@@ -12,54 +12,65 @@ using System.Threading.Tasks;
 namespace Tests
 {
     /// <summary>
-    /// Queue callback items posted to SynchronizationContext.Post for execution 
-    /// on ThreadPool and collect any thrown exceptions.
-    /// Used for testing async/await behaviors, including async void methods.
-    /// It also imposes asynchronous continuations for all await within its scope,
-    /// the reasons behind this is essentially the same as with RunContinuationsAsynchronously:
-    /// https://tinyurl.com/RunContinuationsAsynchronously
+    ///     Queue callback items posted to SynchronizationContext.Post for execution
+    ///     on ThreadPool and collect any thrown exceptions.
+    ///     Used for testing async/await behaviors, including async void methods.
+    ///     It also imposes asynchronous continuations for all await within its scope,
+    ///     the reasons behind this is essentially the same as with RunContinuationsAsynchronously:
+    ///     https://tinyurl.com/RunContinuationsAsynchronously
     /// </summary>
     public class ThreadPoolApartment : AsyncApartmentBase
     {
+        public ThreadPoolApartment()
+        {
+            _syncContext = new ThreadPoolSyncContext(this);
+            TaskScheduler = _syncContext.TaskScheduler;
+        }
+
+        protected override void ConcludeCompletion()
+        {
+            TrySetCompletion();
+        }
+
         #region Helpers
 
         internal class ThreadPoolSyncContext : SynchronizationContext
         {
             private readonly ThreadPoolApartment _apartment;
 
-            public TaskScheduler TaskScheduler { get; }
-
             public ThreadPoolSyncContext(ThreadPoolApartment apartment)
             {
                 _apartment = apartment;
-                this.TaskScheduler = WithContext(() => TaskScheduler.FromCurrentSynchronizationContext());
+                TaskScheduler = WithContext(() => TaskScheduler.FromCurrentSynchronizationContext());
             }
+
+            public TaskScheduler TaskScheduler { get; }
 
             protected void WithContext(Action action)
             {
-                var savedContext = SynchronizationContext.Current;
-                SynchronizationContext.SetSynchronizationContext(this);
+                var savedContext = Current;
+                SetSynchronizationContext(this);
                 try
                 {
                     action();
                 }
                 finally
                 {
-                    SynchronizationContext.SetSynchronizationContext(savedContext);
+                    SetSynchronizationContext(savedContext);
                 }
             }
 
             protected T WithContext<T>(Func<T> func)
             {
-                var savedContext = SynchronizationContext.Current;
-                SynchronizationContext.SetSynchronizationContext(this);
+                var savedContext = Current;
+                SetSynchronizationContext(this);
                 try
                 {
                     return func();
                 }
                 finally
                 {
-                    SynchronizationContext.SetSynchronizationContext(savedContext);
+                    SetSynchronizationContext(savedContext);
                 }
             }
 
@@ -102,7 +113,7 @@ namespace Tests
                 }
 
                 OperationStarted();
-                ThreadPool.UnsafeQueueUserWorkItem(callback, state, preferLocal: false);
+                ThreadPool.UnsafeQueueUserWorkItem(callback, state, false);
             }
         }
 
@@ -115,16 +126,5 @@ namespace Tests
         protected override TaskScheduler TaskScheduler { get; }
 
         #endregion
-
-        public ThreadPoolApartment()
-        {
-            _syncContext = new ThreadPoolSyncContext(this);
-            this.TaskScheduler = _syncContext.TaskScheduler;
-        }
-
-        protected override void ConcludeCompletion()
-        {
-            TrySetCompletion();
-        }
     }
 }

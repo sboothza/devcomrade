@@ -5,12 +5,12 @@
 
 #nullable enable
 
-using AppLogic.Helpers;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using AppLogic.Helpers;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Tests
 {
@@ -24,16 +24,16 @@ namespace Tests
             var sw = new Stopwatch();
 
             await apartment.Run(async () =>
-            {
-                Assert.IsTrue(SynchronizationContext.Current is WindowsFormsSynchronizationContext);
+                                {
+                                    Assert.IsTrue(SynchronizationContext.Current is WindowsFormsSynchronizationContext);
 
-                sw.Start();
-                await InputUtils.TimerYield(1000);
-                sw.Stop();
-            });
+                                    sw.Start();
+                                    await InputUtils.TimerYield(1000);
+                                    sw.Stop();
+                                });
 
             var lapse = sw.ElapsedMilliseconds;
-            Assert.IsTrue(lapse > 900 && lapse < 1100);
+            Assert.IsTrue(lapse is > 900 and < 1100);
         }
     }
 }

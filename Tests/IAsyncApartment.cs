@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace Tests
 {
-    public interface IAsyncApartment: IAsyncDisposable
+    public interface IAsyncApartment : IAsyncDisposable
     {
         /// <summary>A wrapper around Task.Factory.StartNew to run an action</summary>
         public Task Run(Action action, CancellationToken token = default);
