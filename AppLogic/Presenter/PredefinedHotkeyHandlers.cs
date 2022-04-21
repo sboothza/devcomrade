@@ -126,6 +126,34 @@ namespace AppLogic.Presenter
             Host.PlayNotificationSound();
         }
 
+        [HotkeyHandler]
+        public async Task PasteEscaped(Hotkey _, CancellationToken token)
+        {
+            var originalText = GetClipboardText();
+            var text = originalText
+                       .UnixifyLineEndings()
+                       .TrimTrailingEmptyLines()
+                       .EscapeString();
+
+            await Host.FeedTextAsync(text, token);
+            Host.SetClipboardText(originalText);
+            Host.PlayNotificationSound();
+        }
+
+        [HotkeyHandler]
+        public async Task PasteUnEscaped(Hotkey _, CancellationToken token)
+        {
+            var originalText = GetClipboardText();
+            var text = originalText
+                       .UnixifyLineEndings()
+                       .TrimTrailingEmptyLines()
+                       .UnEscapeString();
+
+            await Host.FeedTextAsync(text, token);
+            Host.SetClipboardText(originalText);
+            Host.PlayNotificationSound();
+        }
+
         /// <summary>
         ///     Remove formatting, spaces and paste as single line
         /// </summary>

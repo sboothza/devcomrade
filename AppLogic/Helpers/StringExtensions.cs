@@ -72,6 +72,22 @@ namespace AppLogic.Helpers
         //     }
         // }
 
+        public static string EscapeString(this string value)
+        {
+            return value
+                .Replace("\\", "\\\\")
+                .Replace("\"", "\\\"");
+        }
+
+        public static string UnEscapeString(this string value)
+        {
+            var v = value;
+            v = v.Replace("\\/", "/");
+            v = v.Replace("\\\\", "\\");
+            v = v.Replace("\\\"", "\"");
+            return v;
+        }
+
         public static string ConvertToLinuxPath(this string @this)
         {
             var path = @this.Trim()
@@ -92,12 +108,12 @@ namespace AppLogic.Helpers
         {
             var path = @this.Trim()
                             .Replace('\\', '/')             //in case we have back slashes for some reason...
-                            .Replace("~","%USERPROFILE%"); // fix home directory
+                            .Replace("~", "%USERPROFILE%"); // fix home directory
 
             var pathSections = path.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                                    .ToList();
 
-            if (path[0]=='/')
+            if (path[0] == '/')
                 pathSections[0] = $"{pathSections[0]}:";
 
             return string.Join('\\', pathSections);
