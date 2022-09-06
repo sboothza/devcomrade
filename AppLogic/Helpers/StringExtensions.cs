@@ -88,7 +88,7 @@ namespace AppLogic.Helpers
             return v;
         }
 
-        public static string ConvertToLinuxPath(this string @this)
+        public static string ConvertToLinuxPath(this string @this, string rootPath = "/")
         {
             var path = @this.Trim()
                             .Replace('/', '\\')           //in case we have forward slashes for some reason...
@@ -98,7 +98,7 @@ namespace AppLogic.Helpers
                                    .ToList();
 
             if (pathSections[0].Contains(':'))
-                pathSections[0] = $"/{pathSections[0].Replace(":", "")}";
+                pathSections[0] = $"{rootPath}{pathSections[0].Replace(":", "").ToLower()}";
 
             return string.Join('/', pathSections)
                          .Replace(" ", "\\ ");

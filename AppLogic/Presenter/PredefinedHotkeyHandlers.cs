@@ -126,6 +126,23 @@ namespace AppLogic.Presenter
             Host.PlayNotificationSound();
         }
 
+        /// <summary>
+        ///     Convert and paste Windows path to WSL
+        /// </summary>
+        [HotkeyHandler]
+        public async Task PasteAsWslPath(Hotkey _, CancellationToken token)
+        {
+            var originalText = GetClipboardText();
+            var text = originalText
+                       .UnixifyLineEndings()
+                       .TrimTrailingEmptyLines()
+                       .ConvertToLinuxPath("/mnt/");
+
+            await Host.FeedTextAsync(text, token);
+            Host.SetClipboardText(originalText);
+            Host.PlayNotificationSound();
+        }
+
         [HotkeyHandler]
         public async Task PasteEscaped(Hotkey _, CancellationToken token)
         {
